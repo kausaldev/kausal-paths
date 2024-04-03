@@ -5,6 +5,7 @@ env:
   DB_IMAGE_NAME: paths-backend/paths-postgres
   BUILD_CACHE_IMAGE_NAME: paths-backend/paths-build-cache
   VAULT_KEY: common-dev/data/github-actions/project/paths-backend
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
   build_and_push:
@@ -47,8 +48,8 @@ jobs:
         with:
           context: .
           file: docker/app/Dockerfile
-          load: true
-          tags: ${{ env.APP_IMAGE_NAME }}:test
+          push: true
+          tags: ${{ env.APP_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           cache-from: type=registry,ref=${{ env.DOCKER_REPO }}/${{ env.BUILD_CACHE_IMAGE_NAME }}:cache
           cache-to: type=registry,ref=${{ env.DOCKER_REPO }}/${{ env.BUILD_CACHE_IMAGE_NAME }}:cache,mode=max,image-manifest=true
 
