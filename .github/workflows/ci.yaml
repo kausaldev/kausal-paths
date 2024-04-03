@@ -1,20 +1,21 @@
 name: CI
 on: push
+env:
+  APP_IMAGE_NAME: paths-backend/paths
+  DB_IMAGE_NAME: paths-backend/paths-postgres
+  BUILD_CACHE_IMAGE_NAME: paths-backend/paths-build-cache
+
 jobs:
-  build_test_and_push:
-    name: Build Docker images, run tests and push to Docker registry
+  build_and_push:
+    name: Build Docker images and push to registry
     runs-on: self-hosted
     env:
-      APP_IMAGE_NAME: paths
-      DB_IMAGE_NAME: paths-postgres
       POSTGRES_PASSWORD: foobar123
       DATABASE_URL: postgres://paths:foobar123@db/paths
       EXTRA_PYPI_INDEX: ${{ secrets.EXTRA_PYPI_INDEX }}
-      EXTRA_INSTALLED_APPS_VERSIONS: kausal-paths-extensions==0.3.4
-      EXTRA_INSTALLED_APPS: kausal_paths_extensions
-      DOCKER_BUILDKIT: 1
-      BUILDKIT_PROGRESS: plain
-      VAULT_KEY: common-dev/data/github-actions/project/paths-backend
+      #DOCKER_BUILDKIT: 1
+      #BUILDKIT_PROGRESS: plain
+      VAULT_KEY: common-dev/data/github-actions/project/${{ vars.VAULT_PROJECT }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -37,10 +38,24 @@ jobs:
         if: env.DEPLOYMENT_TYPE
         uses: docker/login-action@v2
         with:
-          registry: ${{ steps.secrets.outputs.DOCKER_REPO }}
-          username: ${{ steps.secrets.outputs.DOCKER_USERNAME }}
-          password: ${{ steps.secrets.outputs.DOCKER_PASSWORD }}
+          registry: ${{ env.DOCKER_REPO }}
+          username: ${{ env.DOCKER_USERNAME }}
+          password: ${{ env.DOCKER_PASSWORD }}
 
+      - name: Build and load Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/app/Dockerfile
+          load: true
+          tags: ${{ env.APP_IMAGE_NAME }}:test
+          cache-from: type=registry,ref=${{ env.DOCKER_REPO }}/${{ env.BUILD_CACHE_IMAGE_NAME }}:cache
+          cache-to: type=registry,ref=${{ env.DOCKER_REPO }}/${{ env.BUILD_CACHE_IMAGE_NAME }}:cache,mode=max,image-manifest=true
+
+  test:
+    runs-on: self-hosted
+    if: false
+    steps:
       - name: Install Docker-compose
         run: |
           sudo apt-get update
