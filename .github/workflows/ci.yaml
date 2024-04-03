@@ -4,6 +4,7 @@ env:
   APP_IMAGE_NAME: paths-backend/paths
   DB_IMAGE_NAME: paths-backend/paths-postgres
   BUILD_CACHE_IMAGE_NAME: paths-backend/paths-build-cache
+  VAULT_KEY: common-dev/data/github-actions/project/paths-backend
 
 jobs:
   build_and_push:
@@ -15,7 +16,6 @@ jobs:
       EXTRA_PYPI_INDEX: ${{ secrets.EXTRA_PYPI_INDEX }}
       #DOCKER_BUILDKIT: 1
       #BUILDKIT_PROGRESS: plain
-      VAULT_KEY: common-dev/data/github-actions/project/${{ vars.VAULT_PROJECT }}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
