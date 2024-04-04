@@ -6,18 +6,16 @@ env:
   BUILD_CACHE_IMAGE_NAME: paths-backend/paths-build-cache
   VAULT_KEY: common-dev/data/github-actions/project/paths-backend
   IMAGE_TAG: ${{ github.sha }}
-  DATABASE_URL: postgres://postgres:postgres@localhost/kausal-paths
-  REDIS_URL: redis://localhost:6379/0
+  DATABASE_URL: postgres://postgres:postgres@postgres/kausal-paths
+  REDIS_URL: redis://redis:6379/0
+  EXTRA_PYPI_INDEX: ${{ secrets.EXTRA_PYPI_INDEX }}
 
 jobs:
   build:
     name: Build
     runs-on: self-hosted
-    env:
-      POSTGRES_PASSWORD: foobar123
-      EXTRA_PYPI_INDEX: ${{ secrets.EXTRA_PYPI_INDEX }}
-      #DOCKER_BUILDKIT: 1
-      #BUILDKIT_PROGRESS: plain
+    outputs:
+      image_name: ${{ steps.build_name.outputs.image_name}}
     steps:
       - name: Check out code
         uses: actions/checkout@v3
@@ -40,7 +38,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Log into Docker registry
-        #if: env.DEPLOYMENT_TYPE
+        # if: env.DEPLOYMENT_TYPE
         uses: docker/login-action@v2
         with:
           registry: ${{ env.DOCKER_REPO }}
@@ -49,6 +47,7 @@ jobs:
 
       - name: Build and load Docker image
         uses: docker/build-push-action@v4
+        id: build
         with:
           context: .
           file: docker/app/Dockerfile
@@ -60,9 +59,18 @@ jobs:
   test:
     name: Test
     runs-on: self-hosted
+    needs: build
+    container:
+      image: "harbor.kausal.dev/paths-backend/paths:${{ github.sha }}"
+      credentials:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    defaults:
+      run:
+        working-directory: /code
     services:
       postgres:
-        image: postgres:15
+        image: postgres:13
         ports: ["5432:5432"]
         env:
           POSTGRES_DB: kausal-paths
@@ -74,26 +82,6 @@ jobs:
         ports: ["6379:6379"]
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - uses: actions/setup-python@v4
-        id: setup-python
-        with:
-          python-version: 3.11
-
-      - name: Setup Virtual Environment
+      - name: Run tests
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install --upgrade pip
-
-      - name: Install dependencies
-        run: |
-          source .venv/bin/activate
-          pip install -r requirements.txt
-
-      - name: Run Pytest
-        run: |
-          source .venv/bin/activate
-          pytest .
+          pytest
