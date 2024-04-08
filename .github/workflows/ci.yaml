@@ -52,6 +52,8 @@ jobs:
           context: .
           file: docker/app/Dockerfile
           push: true
+          build-args: |
+            EXTRA_PYPI_INDEX=${{ env.EXTRA_PYPI_INDEX }}
           tags: ${{ env.DOCKER_REPO }}/${{ env.APP_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           cache-from: type=registry,ref=${{ env.DOCKER_REPO }}/${{ env.BUILD_CACHE_IMAGE_NAME }}:cache
           cache-to: type=registry,ref=${{ env.DOCKER_REPO }}/${{ env.BUILD_CACHE_IMAGE_NAME }}:cache,mode=max,image-manifest=true
