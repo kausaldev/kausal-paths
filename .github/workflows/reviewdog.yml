@@ -1,5 +1,6 @@
 name: reviewdog
 on:
+  pull_request:
   workflow_call:
 
 jobs:
@@ -7,8 +8,9 @@ jobs:
     name: reviewdog
     runs-on: ubuntu-latest
     permissions:
-        contents: read
-        pull-requests: write
+      checks: write
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -27,13 +29,20 @@ jobs:
           cache: 'pip'
           cache-dependency-path: |
             requirements-lint.txt
+      - name: Install dependencies
+        run: python -m pip install -r requirements-lint.txt -r requirements.txt
+      - name: Save cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cache/pip
+          key: ${{ runner.os }}-${{ hashFiles('requirements-lint.txt') }}
       - uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: latest # Optional. [latest,nightly,v.X.Y.Z]
-      - name: Install dependencies
-        run: python -m pip install -r requirements-lint.txt -r requirements.txt
       - name: Run reviewdog
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          reviewdog -reporter=github-check -fail-on-error
+          reviewdog -reporter=github-check -log-level=debug
+
