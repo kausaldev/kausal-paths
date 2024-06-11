@@ -69,6 +69,7 @@ exclude = [
     '^Attic/',
     '^typings/',
     '^local_settings\.py',
+    '^notebooks/',
 ]
 check_untyped_defs = true
 

@@ -17,6 +17,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
+            ~/.cache/pip
             .mypy_cache
           key: ${{ runner.os }}-${{ hashFiles('requirements-lint.txt') }}
       - name: Set up Python 3.12
@@ -31,8 +32,6 @@ jobs:
           reviewdog_version: latest # Optional. [latest,nightly,v.X.Y.Z]
       - name: Install dependencies
         run: python -m pip install -r requirements-lint.txt -r requirements.txt
-      - name: Run mypy
-        run: mypy .
       - name: Run reviewdog
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
