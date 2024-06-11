@@ -28,7 +28,7 @@ jobs:
         with:
           reviewdog_version: latest # Optional. [latest,nightly,v.X.Y.Z]
       - name: Install dependencies
-        run: python -m pip install -r requirements-lint.txt
+        run: python -m pip install -r requirements-lint.txt -r requirements.txt
       - name: Run mypy
         run: mypy .
       - name: Run reviewdog
