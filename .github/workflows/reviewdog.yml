@@ -17,11 +17,14 @@ jobs:
           submodules: recursive
       - name: Setup cache
         uses: actions/cache@v4
+        id: cache
         with:
           path: |
             ~/.cache/pip
             .mypy_cache
-          key: ${{ runner.os }}-${{ hashFiles('requirements-lint.txt') }}
+          key: ${{ runner.os }}-${{ hashFiles('requirements-lint.txt', 'requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
@@ -33,27 +36,35 @@ jobs:
         run: python -m pip install -r requirements-lint.txt -r requirements.txt
       - name: Save cache
         uses: actions/cache/save@v4
+        if: ${{ ! steps.cache.outputs.cache-hit }}
         with:
           path: |
             ~/.cache/pip
-          key: ${{ runner.os }}-${{ hashFiles('requirements-lint.txt') }}
-      - name: Print env
-        run:
-          env
+          key: ${{ runner.os }}-${{ hashFiles('requirements-lint.txt', 'requirements.txt') }}
 
-      - name: do diff
+      - name: Get push diff
         if: github.event_name == 'push'
-        run:
-          echo ${{ github.event.before }}
-          echo ${{ github.sha }}
-          git diff --find-renames --submodule=diff ${{ github.event.before }} ${{ github.sha }}
+        id: push_diff
+        run: |
+          echo ${{ github.event.before }}..${{ github.sha }}
+          git diff --find-renames --submodule=diff ${{ github.event.before }} ${{ github.sha }} > ${{ runner.temp }}/changes.diff
 
       - uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: latest # Optional. [latest,nightly,v.X.Y.Z]
-      - name: Run reviewdog
+
+      - name: Run reviewdog for push
+        if: github.event_name == 'push'
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          reviewdog -reporter=github-check -log-level=debug
+          reviewdog -reporter=github-check -log-level=debug -fail-on-error -diff "cat ${{ runner.temp }}/changes.diff"
+
+      - name: Run reviewdog for PR
+        if: github.event_name == 'pull_request'
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          reviewdog -reporter=github-pr-check -log-level=debug -fail-on-error
+
 
