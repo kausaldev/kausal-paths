@@ -40,6 +40,14 @@ jobs:
       - name: Print env
         run:
           env
+
+      - name: do diff
+        if: github.event_name == 'push'
+        run:
+          echo ${{ github.event.before }}
+          echo ${{ github.sha }}
+          git diff --find-renames --submodule=diff ${{ github.event.before }} ${{ github.sha }}
+
       - uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: latest # Optional. [latest,nightly,v.X.Y.Z]
