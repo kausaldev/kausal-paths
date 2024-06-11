@@ -11,16 +11,26 @@ jobs:
         pull-requests: write
     steps:
       - uses: actions/checkout@v4
+      - name: Setup cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .mypy_cache
+          key: ${{ runner.os }}-${{ hashFiles('requirements-lint.txt') }}
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
           cache: 'pip'
+          cache-dependency-path: |
+            requirements-lint.txt
       - uses: reviewdog/action-setup@v1
         with:
           reviewdog_version: latest # Optional. [latest,nightly,v.X.Y.Z]
       - name: Install dependencies
-        run: python -m pip install -U pip -r requirements-lint.txt
+        run: python -m pip install -r requirements-lint.txt
+      - name: Run mypy
+        run: mypy .
       - name: Run reviewdog
         env:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
