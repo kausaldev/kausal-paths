@@ -135,6 +135,8 @@ jobs:
           else
             echo "❌ End-to-end tests failed. $test_report" >> $GITHUB_STEP_SUMMARY
           fi
+          echo Sleeping
+          sleep 300s
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
